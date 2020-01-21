@@ -9,6 +9,8 @@ RUN apk add --update \
     && apk --purge -v del py-pip \
     && rm -rf /var/cache/apk/*
 
+WORKDIR /
+
 COPY ci-kustomize.py /
 
 ENTRYPOINT [ "/ci-kustomize.py" ]
