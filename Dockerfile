@@ -8,4 +8,4 @@ WORKDIR /
 
 COPY ci-kustomize.py /
 
-ENTRYPOINT [ "/ci-kustomize.py" ]
+CMD /ci-kustomize.py
