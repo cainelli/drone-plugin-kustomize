@@ -38,7 +38,7 @@ class CIKustomize(object):
         print(out)
 
     def build(self, path: str) -> None:
-        _, _ = self.run_cmd(f'rm -Rf {self.build_dir}')
+        _, _ = self.run_cmd(f'rm -Rf {self.build_dir}/{self.environment}')
         _, _ = self.run_cmd(f'mkdir -p {self.artifacts_dir}/templates/')
 
         _, err = self.run_cmd(f'kustomize build {path} -o {self.artifacts_dir}/templates/manifests.yml')
@@ -60,27 +60,30 @@ version: {self.version}
             c.write(values)
         
         # tar the artifacts to be pushed to s3
-        _, err = self.run_cmd(f'tar -czvf {self.build_dir}/{self.environment}.tgz -C {self.artifacts_dir}/ .')
-        if err:
-            print(err)
-            sys.exit(1)
+        _, _ = self.run_cmd(f'tar -czvf {self.build_dir}/{self.environment}.tgz -C {self.artifacts_dir}/ .')
+        
 
 if __name__ == '__main__':
+    is_drone = os.getenv('DRONE', False)
     default_version = 'latest'
-    if os.getenv('DRONE_BUILD_NUMBER') and os.getenv('DRONE_COMMIT_SHA'):
+    if os.getenv('DRONE_BUILD_NUMBER') and os.getenv('DRONE_COMMIT_SHA'):   
         default_version = f'v{os.getenv("DRONE_BUILD_NUMBER")}.{os.getenv("DRONE_COMMIT_SHA")[0:7]}'
-
+    
     parser = argparse.ArgumentParser(prog='ci-kustomize')
-    parser.add_argument('--build', action='store')
     parser.add_argument('--version', action='store', default=default_version)
-    parser.add_argument('--service', action='store', required=True)
-    parser.add_argument('--push', action='store_true')
-    parser.add_argument('--environment', action='store', choices=['testing', 'production'], required=True)
+    parser.add_argument('--service', action='store', default=os.getenv("DRONE_REPO_NAME", False))
+    parser.add_argument('--push', action='store_true', default=is_drone)
 
     args = parser.parse_args()
 
-    ci = CIKustomize(service_name=args.service, environment=args.environment, version=args.version)
-    if args.build:
-        ci.build(path=args.build)
-    if args.push:
-        ci.push()
+    if not args.service:
+        print('required: --service or DRONE_REPO_NAME')
+        sys.exit(1)
+
+    for environment in os.listdir('./overlays'):
+        print(f'producing overlay artifact: {environment}')
+
+        ci = CIKustomize(service_name=args.service, environment=environment, version=args.version)
+        ci.build(path=f'overlays/{environment}')
+        if args.push:
+            ci.push()
