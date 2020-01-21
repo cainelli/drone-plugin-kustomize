@@ -1,11 +1,10 @@
 FROM cainelli/k8s-tools
 
 RUN apk add --update \
-    python \
-    python-dev \
-    py-pip \
+    python3 \
+    python3-dev \
     build-base \
-    && pip install awscli --upgrade --user \
+    && pip3 install awscli --upgrade --user \
     && apk --purge -v del py-pip \
     && rm -rf /var/cache/apk/*
 
