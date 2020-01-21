@@ -36,6 +36,7 @@ class CIKustomize(object):
             sys.exit(1)
         
         print(out)
+
     def build(self, path: str) -> None:
         _, _ = self.run_cmd(f'rm -Rf {self.build_dir}')
         _, _ = self.run_cmd(f'mkdir -p {self.artifacts_dir}/templates/')
