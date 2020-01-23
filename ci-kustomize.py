@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+import json
 import subprocess
 import argparse
 import requests
@@ -54,7 +55,7 @@ class CIKustomize(object):
 
     def deploy(self) -> None:
         for cluster in self._get_clusters_by_environment(self.environment):
-            payload = {
+            payload = json.dumps({
                 'application': self.service_name,
                 'environment': self.environment,
                 'secret': DRONE_SECRET,
@@ -65,8 +66,9 @@ class CIKustomize(object):
                     'author': os.getenv('DRONE_COMMIT_AUTHOR', 'unknown'),
                     'service': self.service_name,
                 }
-            }
-
+            })
+        
+            print(f'calling spinnaker webhook {payload}')
             res = requests.post(SPINNAKER_WEBHOOK_ENDPOINT, data=payload, headers={'Content-Type': 'application/json'})
             print(res.text)
     
@@ -75,7 +77,7 @@ class CIKustomize(object):
         if environment == 'testing':
             return [(lambda x: f'testing{x}')(x) for x in range(1, 13)]
         elif environment == 'production':
-            return [(lambda x: f'frankfurt{x}')(x) for x in range(1, 1)]
+            return [(lambda x: f'frankfurt{x}')(x) for x in range(1, 2)]
 
 if __name__ == '__main__':
     is_drone = os.getenv('DRONE', False)
@@ -86,8 +88,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='ci-kustomize')
     parser.add_argument('--version', action='store', default=default_version)
     parser.add_argument('--service', action='store', default=os.getenv("DRONE_REPO_NAME", False))
-    parser.add_argument('--push', action='store_true', default=is_drone)
-    parser.add_argument('--deploy', action='store_false', default=False)
     args = parser.parse_args()
 
     if not args.service:
@@ -95,12 +95,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     for environment in os.listdir('./overlays'):
-        print(f'producing overlay artifact: {environment}')
-
         ci = CIKustomize(service_name=args.service, environment=environment, version=args.version)
-        if args.deploy:
-            ci.deploy()
-        else:
-            ci.build(path=f'./overlays/{environment}/')
-            if args.push:
-                ci.push()
+        print(f'producing overlay artifact: {environment}')
+        ci.build(path=f'./overlays/{environment}/')
+        ci.push()        
+        ci.deploy()

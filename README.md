@@ -21,12 +21,10 @@ pipeline:
 
 ## supported parameters
 
-
 | Parameter             | Description                                                   | Example              |
 |-----------------------|---------------------------------------------------------------|----------------------|
 | ${parameters.cluster} | cluster name                                                  | frankfurt1, testing1 |
 | ${parameters.version} | build version v$(DRONE_BUILD_NUMBER).$(DRONE_COMMIT_SHA[0:7]) | v617.47de901         |
 | ${parameters.author}  | commit author                                                 | userX                |
 | ${parameters.service} | repository name                                               | fishfarm             |
-
 
